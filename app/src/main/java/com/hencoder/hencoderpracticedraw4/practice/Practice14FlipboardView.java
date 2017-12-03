@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
@@ -37,7 +38,8 @@ public class Practice14FlipboardView extends View {
     {
         bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.maps);
 
-        animator.setDuration(2500);
+        //减慢了效果图的速度
+        animator.setDuration(10000);
         animator.setInterpolator(new LinearInterpolator());
         animator.setRepeatCount(ValueAnimator.INFINITE);
         animator.setRepeatMode(ValueAnimator.REVERSE);
@@ -72,7 +74,33 @@ public class Practice14FlipboardView extends View {
         int x = centerX - bitmapWidth / 2;
         int y = centerY - bitmapHeight / 2;
 
+        //整体的绘制原理其实是分两次绘制bitmap
+        //第一次绘制的bitmap，只绘制其上半部分，作为效果图那固定不动的那块
+        //第二次绘制的bitmap，根据 degree 实时变动的值而动态的变化
+
+        //第一次绘制的内容
         canvas.save();
+
+        //
+        canvas.clipRect(0,0,getWidth(),centerY);
+        canvas.drawBitmap(bitmap, x, y, paint);
+        canvas.restore();
+
+        //第二次绘制的内容
+        //===============
+
+        canvas.save();
+        if (degree < 90) {
+            //如果旋转的角度<90时，第二次绘制的bitmap的下半部分还处于折线的下方，因此只要裁剪处于折线下方的那下半部分
+            //如果不裁剪，第二次绘制的bitmap的上半部分就会存在，不符合要求
+            canvas.clipRect(0, centerY, getWidth(), getHeight());
+        } else {
+            //如果旋转的角度>=90时，第二次绘制的bitmap的下半部分转到了折线的上方，因此只要裁剪旋转到折线上方的原本的那下半部分
+            //如过不裁剪，第二次绘制的bitmap的下半部分就会旋转到折线下方，不符合要求
+            canvas.clipRect(0, 0, getWidth(), centerY);
+        }
+        //
+        Log.d("TAG", "degree="+degree);
 
         camera.save();
         camera.rotateX(degree);
